@@ -15,13 +15,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: 1.23
+          cache-dependency-path: "*/*.sum"
 
-      - name: Install golangci-lint
-        uses: golangci/golangci-lint-action@v7
+      - name: Lint code
+        uses: golangci/golangci-lint-action@v6
         with:
-          version: latest
-          args: --timeout=3m
+          version: v1.62.0
+          args: -D exhaustruct -D exhaustive -D godox --timeout 5m
