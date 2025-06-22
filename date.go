@@ -5,8 +5,10 @@ import (
 	"time"
 )
 
-const MJD_0 float64 = 2400000.5
-const MJD_JD2000 float64 = 51544.5
+const (
+	MJD_0      float64 = 2400000.5
+	MJD_JD2000 float64 = 51544.5
+)
 
 func shiftJulianToNoon(julianDays, julianFraction float64) (float64, float64) {
 	switch {

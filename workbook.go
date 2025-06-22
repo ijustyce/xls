@@ -18,7 +18,7 @@ type WorkBook struct {
 	Xfs      []st_xf_data
 	Fonts    []Font
 	Formats  map[uint16]*Format
-	//All the sheets from the workbook
+	// All the sheets from the workbook
 	sheets         []*WorkSheet
 	Author         string
 	rs             io.ReadSeeker
@@ -73,7 +73,7 @@ func (w *WorkBook) addFormat(format *Format) {
 func (wb *WorkBook) parseBof(buf io.ReadSeeker, b *bof, pre *bof, offset_pre int) (after *bof, after_using *bof, offset int) {
 	after = b
 	after_using = pre
-	var bts = make([]byte, b.Size)
+	bts := make([]byte, b.Size)
 	binary.Read(buf, binary.LittleEndian, bts)
 	buf_item := bytes.NewReader(bts)
 	switch b.Id {
@@ -117,7 +117,7 @@ func (wb *WorkBook) parseBof(buf io.ReadSeeker, b *bof, pre *bof, offset_pre int
 		binary.Read(buf_item, binary.LittleEndian, info)
 		wb.sst = make([]string, info.Count)
 		var size uint16
-		var i = 0
+		i := 0
 		// dont forget to initialize offset
 		offset = 0
 		for ; i < int(info.Count); i++ {
@@ -135,7 +135,7 @@ func (wb *WorkBook) parseBof(buf io.ReadSeeker, b *bof, pre *bof, offset_pre int
 		}
 		offset = i
 	case 0x85: // boundsheet
-		var bs = new(boundsheet)
+		bs := new(boundsheet)
 		binary.Read(buf_item, binary.LittleEndian, bs)
 		// different for BIFF5 and BIFF8
 		wb.addSheet(bs, buf_item)
@@ -153,30 +153,32 @@ func (wb *WorkBook) parseBof(buf io.ReadSeeker, b *bof, pre *bof, offset_pre int
 		f := new(FontInfo)
 		binary.Read(buf_item, binary.LittleEndian, f)
 		wb.addFont(f, buf_item)
-	case 0x41E: //FORMAT
+	case 0x41E: // FORMAT
 		font := new(Format)
 		binary.Read(buf_item, binary.LittleEndian, &font.Head)
 		font.str, _ = wb.get_string(buf_item, font.Head.Size)
 		wb.addFormat(font)
-	case 0x22: //DATEMODE
+	case 0x22: // DATEMODE
 		binary.Read(buf_item, binary.LittleEndian, &wb.dateMode)
 	}
 	return
 }
+
 func decodeWindows1251(enc []byte) string {
 	dec := charmap.Windows1251.NewDecoder()
 	out, _ := dec.Bytes(enc)
 	return string(out)
 }
+
 func (w *WorkBook) get_string(buf io.ReadSeeker, size uint16) (res string, err error) {
 	if w.Is5ver {
-		var bts = make([]byte, size)
+		bts := make([]byte, size)
 		_, err = buf.Read(bts)
 		res = decodeWindows1251(bts)
-		//res = string(bts)
+		// res = string(bts)
 	} else {
-		var richtext_num = uint16(0)
-		var phonetic_size = uint32(0)
+		richtext_num := uint16(0)
+		phonetic_size := uint32(0)
 		var flag byte
 		err = binary.Read(buf, binary.LittleEndian, &flag)
 		if flag&0x8 != 0 {
@@ -192,8 +194,8 @@ func (w *WorkBook) get_string(buf io.ReadSeeker, size uint16) (res string, err e
 			w.continue_apsb = 0
 		}
 		if flag&0x1 != 0 {
-			var bts = make([]uint16, size)
-			var i = uint16(0)
+			bts := make([]uint16, size)
+			i := uint16(0)
 			for ; i < size && err == nil; i++ {
 				err = binary.Read(buf, binary.LittleEndian, &bts[i])
 			}
@@ -211,7 +213,7 @@ func (w *WorkBook) get_string(buf io.ReadSeeker, size uint16) (res string, err e
 			}
 
 		} else {
-			var bts = make([]byte, size)
+			bts := make([]byte, size)
 			var n int
 			n, err = buf.Read(bts)
 			if uint16(n) < size {
@@ -219,7 +221,7 @@ func (w *WorkBook) get_string(buf io.ReadSeeker, size uint16) (res string, err e
 				err = io.EOF
 			}
 
-			var bts1 = make([]uint16, n)
+			bts1 := make([]uint16, n)
 			for k, v := range bts[:n] {
 				bts1[k] = uint16(v)
 			}

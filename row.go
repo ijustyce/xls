@@ -10,15 +10,15 @@ type rowInfo struct {
 	Flags    uint32
 }
 
-//Row the data of one row
+// Row the data of one row
 type Row struct {
 	wb   *WorkBook
 	info *rowInfo
 	cols map[uint16]contentHandler
 }
 
-//Col Get the Nth Col from the Row, if has not, return nil.
-//Suggest use Has function to test it.
+// Col Get the Nth Col from the Row, if has not, return nil.
+// Suggest use Has function to test it.
 func (r *Row) Col(i int) string {
 	serial := uint16(i)
 	if ch, ok := r.cols[serial]; ok {
@@ -35,8 +35,8 @@ func (r *Row) Col(i int) string {
 	return ""
 }
 
-//ColExact Get the Nth Col from the Row, if has not, return nil.
-//For merged cells value is returned for first cell only
+// ColExact Get the Nth Col from the Row, if has not, return nil.
+// For merged cells value is returned for first cell only
 func (r *Row) ColExact(i int) string {
 	serial := uint16(i)
 	if ch, ok := r.cols[serial]; ok {
@@ -46,12 +46,12 @@ func (r *Row) ColExact(i int) string {
 	return ""
 }
 
-//LastCol Get the number of Last Col of the Row.
+// LastCol Get the number of Last Col of the Row.
 func (r *Row) LastCol() int {
 	return int(r.info.Lcell)
 }
 
-//FirstCol Get the number of First Col of the Row.
+// FirstCol Get the number of First Col of the Row.
 func (r *Row) FirstCol() int {
 	return int(r.info.Fcell)
 }

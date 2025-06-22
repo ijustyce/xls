@@ -31,10 +31,10 @@ func CompareXlsXlsx(xlsfilepathname string, xlsxfilepathname string) string {
 				xlsxText := xlsxCell.String()
 				xlsText := xlsRow.Col(cell)
 				if xlsText != xlsxText {
-					//try to convert to numbers
+					// try to convert to numbers
 					xlsFloat, xlsErr := strconv.ParseFloat(xlsText, 64)
 					xlsxFloat, xlsxErr := strconv.ParseFloat(xlsxText, 64)
-					//check if numbers have no significant difference
+					// check if numbers have no significant difference
 					if xlsErr == nil && xlsxErr == nil {
 						diff := math.Abs(xlsFloat - xlsxFloat)
 						if diff > 0.0000001 {
