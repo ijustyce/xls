@@ -44,6 +44,7 @@ func (r *Row) ColExact(i int) string {
 		strs := ch.String(r.wb)
 		return strs[0]
 	}
+
 	return ""
 }
 

@@ -9,6 +9,8 @@ import (
 // TestBigTable verifies that values in specific columns match expected patterns
 // across thousands of rows. It checks for content and formatting correctness.
 func TestBigTable(t *testing.T) {
+	t.Parallel()
+
 	const filePath = "testdata/bigtable.xls"
 
 	// Attempt to open the test XLS file
@@ -32,10 +34,10 @@ func TestBigTable(t *testing.T) {
 	// Define how many rows we expect to validate
 	const rowCount = 4999
 
-	for i := 1; i <= rowCount; i++ {
-		row := sheet.Row(i)
+	for rowIndex := 1; rowIndex <= rowCount; rowIndex++ {
+		row := sheet.Row(rowIndex)
 		if row == nil {
-			t.Logf("row %d is nil, skipping", i)
+			t.Logf("row %d is nil, skipping", rowIndex)
 			continue
 		}
 
@@ -48,13 +50,15 @@ func TestBigTable(t *testing.T) {
 		actualCol8 := row.Col(8)
 
 		if actualCol2 != expectedCol2 {
-			t.Errorf("row %d: col 2 mismatch: got %q, want %q", i, actualCol2, expectedCol2)
+			t.Errorf("row %d: col 2 mismatch: got %q, want %q", rowIndex, actualCol2, expectedCol2)
 		}
+
 		if actualCol5 != expectedCol5 {
-			t.Errorf("row %d: col 5 mismatch: got %q, want %q", i, actualCol5, expectedCol5)
+			t.Errorf("row %d: col 5 mismatch: got %q, want %q", rowIndex, actualCol5, expectedCol5)
 		}
+
 		if actualCol8 != expectedCol8 {
-			t.Errorf("row %d: col 8 mismatch: got %q, want %q", i, actualCol8, expectedCol8)
+			t.Errorf("row %d: col 8 mismatch: got %q, want %q", rowIndex, actualCol8, expectedCol8)
 		}
 
 		// Advance counters and dates
@@ -74,5 +78,6 @@ func mustParseDate(value string) time.Time {
 	if err != nil {
 		panic(fmt.Sprintf("invalid test date %q: %v", value, err))
 	}
+
 	return date
 }

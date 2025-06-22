@@ -50,6 +50,7 @@ type HyperLink struct {
 func (h *HyperLink) String(wb *WorkBook) []string {
 	res := make([]string, h.LastColB-h.FristColB+1)
 	var str string
+
 	if h.IsUrl {
 		str = fmt.Sprintf("%s(%s)", h.Description, h.Url)
 	} else {

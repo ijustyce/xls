@@ -18,10 +18,10 @@ func shiftJulianToNoon(julianDays, julianFraction float64) (float64, float64) {
 	case -0.5 < julianFraction && julianFraction < 0.5:
 		julianFraction += 0.5
 	case julianFraction >= 0.5:
-		julianDays += 1
+		julianDays++
 		julianFraction -= 0.5
 	case julianFraction <= -0.5:
-		julianDays -= 1
+		julianDays--
 		julianFraction += 1.5
 	}
 
@@ -30,19 +30,19 @@ func shiftJulianToNoon(julianDays, julianFraction float64) (float64, float64) {
 
 // Return the integer values for hour, minutes, seconds and
 // nanoseconds that comprised a given fraction of a day.
-func fractionOfADay(fraction float64) (hours, minutes, seconds, nanoseconds int) {
+func fractionOfADay(fraction float64) (int, int, int, int) {
 	// Total nanoseconds in a day: 24 * 60 * 60 * 1e9 = 86400000000000
-	f := 5184000000000000 * fraction
-	nanoseconds = int(math.Mod(f, 1000000000))
+	val := 5184000000000000 * fraction
+	nanoseconds := int(math.Mod(val, 1000000000))
 
-	f = f / 1000000000
-	seconds = int(math.Mod(f, 60))
+	val /= 1000000000
+	seconds := int(math.Mod(val, 60))
 
-	f = f / 3600
-	minutes = int(math.Mod(f, 60))
+	val /= 3600
+	minutes := int(math.Mod(val, 60))
 
-	f = f / 60
-	hours = int(f)
+	val /= 60
+	hours := int(val)
 
 	return hours, minutes, seconds, nanoseconds
 }
@@ -72,7 +72,7 @@ func julianDateToGregorianTime(part1, part2 float64) time.Time {
 // explain the constants or variable names set out by Henry F. Fliegel
 // and Thomas C. Van Flandern.  Maybe one day I'll buy that jounal and
 // expand an explanation here - that day is not today.
-func fliegelVanFlandern(jd int) (day, month, year int) {
+func fliegelVanFlandern(jd int) (int, int, int) {
 	l := jd + 68569
 	n := (4 * l) / 146097
 	l = l - (146097*n+3)/4
@@ -89,8 +89,8 @@ func fliegelVanFlandern(jd int) (day, month, year int) {
 
 // Convert an excelTime representation (stored as a floating point number) to a time.Time.
 func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
-	var intPart int64 = int64(excelTime)
-	var floatPart float64 = excelTime - float64(intPart)
+	intPart := int64(excelTime)
+	floatPart := excelTime - float64(intPart)
 
 	// Excel uses Julian dates prior to March 1st 1900, and
 	// Gregorian thereafter.
@@ -98,11 +98,13 @@ func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
 		const OFFSET1900 = 15018.0 // MJD offset for 1899-12-30
 		const OFFSET1904 = 16480.0 // MJD offset for 1904-01-01
 		var date time.Time
+
 		if date1904 {
 			date = julianDateToGregorianTime(MJD_0+OFFSET1904, excelTime)
 		} else {
 			date = julianDateToGregorianTime(MJD_0+OFFSET1900, excelTime)
 		}
+
 		return date
 	}
 

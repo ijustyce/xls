@@ -12,6 +12,7 @@ import (
 // This test was originally created to verify issue #47 but now serves as a regression test for .xls/.xlsx parity.
 func TestIssue47(t *testing.T) {
 	t.Parallel()
+
 	testdataPath := "testdata"
 
 	// Read the directory contents
@@ -36,6 +37,8 @@ func TestIssue47(t *testing.T) {
 
 		// Run each file pair as a subtest
 		t.Run(entry.Name(), func(t *testing.T) {
+			t.Parallel()
+
 			// Skip if .xlsx file does not exist
 			if _, err := os.Stat(xlsxFile); err != nil {
 				t.Skipf("Skipping test for %q: XLSX file %q not found", xlsFile, xlsxFile)

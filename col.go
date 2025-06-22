@@ -95,13 +95,13 @@ func (xf *XfRk) renderCustomFormat(workBook *WorkBook, formatNo uint16) string {
 }
 
 // renderDate extracts the underlying float value and renders it as a date
-func (xf *XfRk) renderDate(wb *WorkBook) string {
+func (xf *XfRk) renderDate(workBook *WorkBook) string {
 	intVal, floatVal, isFloat := xf.Rk.number()
 	if !isFloat {
 		floatVal = float64(intVal)
 	}
 
-	t := timeFromExcelTime(floatVal, wb.dateMode == 1)
+	t := timeFromExcelTime(floatVal, workBook.dateMode == 1)
 
 	// Use a general format for user-defined dates
 	return t.Format("02.01.2006")
@@ -144,14 +144,15 @@ func (rk RK) number() (intNum int64, floatNum float64, isFloat bool) {
 		floatNum = math.Float64frombits(uint64(raw) << 34)
 
 		if multiplied {
-			floatNum /= 100
+			floatNum *= 0.01
 		}
+
 		return
 	}
 
 	if multiplied {
 		isFloat = true
-		floatNum = float64(raw) / 100
+		floatNum = float64(raw) * 0.01
 
 		return
 	}

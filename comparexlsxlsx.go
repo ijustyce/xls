@@ -42,6 +42,7 @@ func CompareXlsXlsx(xlsFilePath, xlsxFilePath string) string {
 				if val, err := xlsxCell.FormattedValue(); err == nil {
 					xlsxRaw = val
 				}
+
 				xlsRaw := xlsRow.Col(colIdx)
 
 				// Try normalizing both to comparable format (e.g., date/time)
@@ -55,15 +56,19 @@ func CompareXlsXlsx(xlsFilePath, xlsxFilePath string) string {
 				// Try comparing as float (e.g., numeric Excel serials)
 				xlsFloat, xlsErr := strconv.ParseFloat(xlsRaw, 64)
 				xlsxFloat, xlsxErr := strconv.ParseFloat(xlsxRaw, 64)
+
 				if xlsErr == nil && xlsxErr == nil {
 					if math.Abs(xlsFloat-xlsxFloat) < 1e-7 {
 						continue // numerically equal
 					}
+
 					xlsTime := excelEpoch.Add(time.Duration(xlsFloat * 24 * float64(time.Hour)))
 					xlsxTime := excelEpoch.Add(time.Duration(xlsxFloat * 24 * float64(time.Hour)))
+
 					if xlsTime.Truncate(time.Second).Equal(xlsxTime.Truncate(time.Second)) {
 						continue // time-equal
 					}
+
 					return fmt.Sprintf(
 						"Sheet %q, row %d, col %d: numeric mismatch — xls: %f (%s), xlsx: %f (%s)",
 						xlsxSheet.Name, rowIdx, colIdx,
