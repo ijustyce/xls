@@ -45,11 +45,11 @@ func newWorkBookFromOle2(readSeeker io.ReadSeeker) *WorkBook {
 func (wb *WorkBook) Parse(buf io.ReadSeeker) {
 	currentBOF := new(bof)
 	previousBOF := new(bof)
-	offset := 0
+	sstOffset := 0
 
 	for {
 		if err := binary.Read(buf, binary.LittleEndian, currentBOF); err == nil {
-			previousBOF, currentBOF, offset = wb.parseBof(buf, currentBOF, previousBOF, offset)
+			sstOffset, previousBOF, currentBOF = wb.parseBof(buf, currentBOF, previousBOF, sstOffset)
 		} else {
 			break
 		}

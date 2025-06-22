@@ -26,44 +26,50 @@ type sstParser struct {
 	strCount int
 }
 
-func (wb *WorkBook) parseBof(buf io.ReadSeeker, currentBOF *bof, previousBOF *bof, offsetPre int) (after *bof, afterUsing *bof, offset int) {
-	data := make([]byte, currentBOF.Size)
-	binary.Read(buf, binary.LittleEndian, data)
+func (wb *WorkBook) parseBof(buf io.ReadSeeker, current *bof, previous *bof, sstOffsetIn int) (sstOffsetOut int, newPrev *bof, newCurr *bof) {
+	data := make([]byte, current.Size)
+	if err := binary.Read(buf, binary.LittleEndian, data); err != nil {
+		panic(err)
+	}
 
-	after = currentBOF
-	afterUsing = previousBOF
-	offset = offsetPre
+	sstOffsetOut = sstOffsetIn
+	newPrev = current
+	newCurr = previous
 
-	switch currentBOF.ID {
+	switch current.ID {
 	case 0xfc: // SST
 		parser := &sstParser{wb: wb}
 		parser.parseSST(data)
 		wb.sstParser = parser
-		offset = parser.sstIndex
+		sstOffsetOut = parser.sstIndex
+
 	case 0x3c: // CONTINUE
-		if previousBOF.ID == 0xfc && wb.sstParser != nil {
+		if previous.ID == 0xfc && wb.sstParser != nil {
 			wb.sstParser.parseContinue(data)
-			offset = wb.sstParser.sstIndex
-			after = previousBOF
-			afterUsing = currentBOF
+			sstOffsetOut = wb.sstParser.sstIndex
+
+			// Continue treating `previous` as the SST block, and current as CONTINUE
+			newPrev = previous
+			newCurr = current
 		}
+
 	default:
-		handler := recordHandlers[currentBOF.ID]
-		if handler != nil {
-			newOffset, newAfter, newAfterUsing := handler(wb, data, previousBOF, offsetPre)
-			if newAfter != nil {
-				after = newAfter
+		if handler := recordHandlers[current.ID]; handler != nil {
+			offset, maybeNewPrev, maybeNewCurr := handler(wb, data, previous, sstOffsetIn)
+
+			sstOffsetOut = offset
+
+			if maybeNewPrev != nil {
+				newPrev = maybeNewPrev
 			}
 
-			if newAfterUsing != nil {
-				afterUsing = newAfterUsing
+			if maybeNewCurr != nil {
+				newCurr = maybeNewCurr
 			}
-
-			offset = newOffset
 		}
 	}
 
-	return
+	return sstOffsetOut, newPrev, newCurr
 }
 
 func handleBOF(workBook *WorkBook, data []byte, _ *bof, offsetPre int) (int, *bof, *bof) {
