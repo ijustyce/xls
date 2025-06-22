@@ -126,7 +126,7 @@ func (w *WorkSheet) parseBof(buf io.ReadSeeker, b *bof, pre *bof, colPre interfa
 			formulaStringCol.Col = ch.Header.Col
 			var cStringLen uint16
 			binary.Read(buf, binary.LittleEndian, &cStringLen)
-			str, err := w.wb.get_string(buf, cStringLen)
+			str, err := w.wb.getString(buf, cStringLen)
 
 			if nil == err {
 				formulaStringCol.RenderedValue = str
@@ -145,7 +145,7 @@ func (w *WorkSheet) parseBof(buf io.ReadSeeker, b *bof, pre *bof, colPre interfa
 		binary.Read(buf, binary.LittleEndian, &c.BlankCol)
 		var count uint16
 		binary.Read(buf, binary.LittleEndian, &count)
-		c.Str, _ = w.wb.get_string(buf, count)
+		c.Str, _ = w.wb.getString(buf, count)
 		col = c
 	case 0x201: // BLANK
 		col = new(BlankCol)
@@ -173,9 +173,9 @@ func (w *WorkSheet) parseBof(buf io.ReadSeeker, b *bof, pre *bof, colPre interfa
 			binary.Read(buf, binary.BigEndian, &guid)
 
 			if guid[0] == 0xE0C9EA79F9BACE11 && guid[1] == 0x8C8200AA004BA90B { // URL
-				hyperlink.IsUrl = true
+				hyperlink.IsURL = true
 				binary.Read(buf, binary.LittleEndian, &count)
-				hyperlink.Url = b.utf16String(buf, count/2)
+				hyperlink.URL = b.utf16String(buf, count/2)
 			} else if guid[0] == 0x303000000000000 && guid[1] == 0xC000000000000046 { // URL{
 				var upCount uint16
 				binary.Read(buf, binary.LittleEndian, &upCount)

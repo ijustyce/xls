@@ -1,3 +1,4 @@
+//nolint:mnd
 package xls
 
 import (
@@ -44,7 +45,7 @@ func (c *Col) LastCol() uint16 {
 // String returns a string slice representation of the column's contents.
 // This default implementation returns a single placeholder value and is
 // meant to be overridden by concrete column types (e.g. NumberCol, RkCol).
-func (c *Col) String(workBook *WorkBook) []string {
+func (c *Col) String(_ *WorkBook) []string {
 	return []string{"default"}
 }
 
@@ -94,7 +95,7 @@ func (xf *XfRk) renderCustomFormat(workBook *WorkBook, formatNo uint16) string {
 	return xf.renderDate(workBook)
 }
 
-// renderDate extracts the underlying float value and renders it as a date
+// renderDate extracts the underlying float value and renders it as a date.
 func (xf *XfRk) renderDate(workBook *WorkBook) string {
 	intVal, floatVal, isFloat := xf.Rk.number()
 	if !isFloat {
@@ -107,7 +108,7 @@ func (xf *XfRk) renderDate(workBook *WorkBook) string {
 	return t.Format("02.01.2006")
 }
 
-// isNumericFormat returns true if the format string appears to represent a number
+// isNumericFormat returns true if the format string appears to represent a number.
 func isNumericFormat(format string) bool {
 	return (format == "general" ||
 		strings.Contains(format, "#") ||
@@ -120,7 +121,7 @@ func isNumericFormat(format string) bool {
 		!strings.Contains(format, "д.г")
 }
 
-// isBuiltinDateFormat checks if a format number is one of Excel's standard date formats
+// isBuiltinDateFormat checks if a format number is one of Excel's standard date formats.
 func isBuiltinDateFormat(fNo uint16) bool {
 	return (14 <= fNo && fNo <= 17) || fNo == 22 ||
 		(27 <= fNo && fNo <= 36) || (50 <= fNo && fNo <= 58)
@@ -274,7 +275,7 @@ type FormulaCol struct {
 }
 
 // String returns a placeholder indicating that formula result parsing is not yet implemented.
-func (c *FormulaCol) String(wb *WorkBook) []string {
+func (c *FormulaCol) String(_ *WorkBook) []string {
 	return []string{"FormulaCol"}
 }
 
@@ -312,7 +313,7 @@ type labelCol struct {
 }
 
 // String returns the stored string from a LABEL record.
-func (c *labelCol) String(wb *WorkBook) []string {
+func (c *labelCol) String(_ *WorkBook) []string {
 	return []string{c.Str}
 }
 
@@ -324,6 +325,6 @@ type BlankCol struct {
 }
 
 // String returns an empty string for a blank cell.
-func (c *BlankCol) String(wb *WorkBook) []string {
+func (c *BlankCol) String(_ *WorkBook) []string {
 	return []string{""}
 }

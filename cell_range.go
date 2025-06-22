@@ -4,13 +4,13 @@ import (
 	"fmt"
 )
 
-// range type of multi rows
+// range type of multi rows.
 type Ranger interface {
 	FirstRow() uint16
 	LastRow() uint16
 }
 
-// range type of multi cells in multi rows
+// range type of multi cells in multi rows.
 type CellRange struct {
 	FirstRowB uint16
 	LastRowB  uint16
@@ -34,30 +34,30 @@ func (c *CellRange) LastCol() uint16 {
 	return c.LastColB
 }
 
-// hyperlink type's content
+// hyperlink type's content.
 type HyperLink struct {
 	CellRange
 	Description      string
 	TextMark         string
 	TargetFrame      string
-	Url              string
+	URL              string
 	ShortedFilePath  string
 	ExtendedFilePath string
-	IsUrl            bool
+	IsURL            bool
 }
 
-// get the hyperlink string, use the public variable Url to get the original Url
-func (h *HyperLink) String(wb *WorkBook) []string {
+// get the hyperlink string, use the public variable Url to get the original Url.
+func (h *HyperLink) String(_ *WorkBook) []string {
 	res := make([]string, h.LastColB-h.FristColB+1)
 	var str string
 
-	if h.IsUrl {
-		str = fmt.Sprintf("%s(%s)", h.Description, h.Url)
+	if h.IsURL {
+		str = fmt.Sprintf("%s(%s)", h.Description, h.URL)
 	} else {
 		str = h.ExtendedFilePath
 	}
 
-	for i := uint16(0); i < h.LastColB-h.FristColB+1; i++ {
+	for i := range res {
 		res[i] = str
 	}
 
