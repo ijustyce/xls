@@ -44,7 +44,7 @@ func (c *Col) LastCol() uint16 {
 // String returns a string slice representation of the column's contents.
 // This default implementation returns a single placeholder value and is
 // meant to be overridden by concrete column types (e.g. NumberCol, RkCol).
-func (c *Col) String(wb *WorkBook) []string {
+func (c *Col) String(workBook *WorkBook) []string {
 	return []string{"default"}
 }
 
@@ -55,30 +55,30 @@ type XfRk struct {
 
 // String converts the RK value to its formatted string representation,
 // depending on the associated cell format (Xf) and number format definition.
-func (xf *XfRk) String(wb *WorkBook) string {
+func (xf *XfRk) String(workBook *WorkBook) string {
 	idx := int(xf.Index)
-	if idx >= len(wb.Xfs) {
+	if idx >= len(workBook.Xfs) {
 		return xf.Rk.String() // fallback: no format info
 	}
 
-	formatNo := wb.Xfs[idx].formatNo()
+	formatNo := workBook.Xfs[idx].formatNo()
 
 	// If format number is user-defined
 	if formatNo >= 164 {
-		return xf.renderCustomFormat(wb, formatNo)
+		return xf.renderCustomFormat(workBook, formatNo)
 	}
 
 	// Built-in date/time formats (based on OpenOffice Excel format spec)
 	if isBuiltinDateFormat(formatNo) {
-		return xf.renderDate(wb)
+		return xf.renderDate(workBook)
 	}
 
 	return xf.Rk.String() // fallback: plain number
 }
 
 // renderCustomFormat handles user-defined Excel formats (formatNo >= 164).
-func (xf *XfRk) renderCustomFormat(wb *WorkBook, formatNo uint16) string {
-	formatter := wb.Formats[formatNo]
+func (xf *XfRk) renderCustomFormat(workBook *WorkBook, formatNo uint16) string {
+	formatter := workBook.Formats[formatNo]
 	if formatter == nil {
 		return xf.Rk.String()
 	}
@@ -91,7 +91,7 @@ func (xf *XfRk) renderCustomFormat(wb *WorkBook, formatNo uint16) string {
 	}
 
 	// Otherwise treat as a date
-	return xf.renderDate(wb)
+	return xf.renderDate(workBook)
 }
 
 // renderDate extracts the underlying float value and renders it as a date
@@ -100,6 +100,7 @@ func (xf *XfRk) renderDate(wb *WorkBook) string {
 	if !isFloat {
 		floatVal = float64(intVal)
 	}
+
 	t := timeFromExcelTime(floatVal, wb.dateMode == 1)
 
 	// Use a general format for user-defined dates
@@ -141,6 +142,7 @@ func (rk RK) number() (intNum int64, floatNum float64, isFloat bool) {
 	if !isInteger {
 		isFloat = true
 		floatNum = math.Float64frombits(uint64(raw) << 34)
+
 		if multiplied {
 			floatNum /= 100
 		}
@@ -150,6 +152,7 @@ func (rk RK) number() (intNum int64, floatNum float64, isFloat bool) {
 	if multiplied {
 		isFloat = true
 		floatNum = float64(raw) / 100
+
 		return
 	}
 
@@ -177,6 +180,7 @@ func (rk RK) Float() (float64, error) {
 	if !isFloat {
 		return 0, ErrIsInt
 	}
+
 	return f, nil
 }
 
@@ -202,6 +206,7 @@ func (c *MulrkCol) String(wb *WorkBook) []string {
 		xfrk := c.Xfrks[i]
 		res[i] = xfrk.String(wb)
 	}
+
 	return res
 }
 
@@ -222,7 +227,7 @@ func (c *MulBlankCol) LastCol() uint16 {
 //
 // Even though these cells are visually empty, they may have distinct formatting
 // information stored in the XF index (available via c.Xfs).
-func (c *MulBlankCol) String(wb *WorkBook) []string {
+func (c *MulBlankCol) String(_ *WorkBook) []string {
 	return make([]string, len(c.Xfs))
 }
 
@@ -235,7 +240,7 @@ type NumberCol struct {
 // String returns the floating-point value of the NumberCol as a string.
 //
 // This corresponds to the BIFF `NUMBER` record, which stores an IEEE 754 float.
-func (c *NumberCol) String(wb *WorkBook) []string {
+func (c *NumberCol) String(_ *WorkBook) []string {
 	return []string{strconv.FormatFloat(c.Float, 'f', -1, 64)}
 }
 
@@ -247,7 +252,7 @@ type FormulaStringCol struct {
 }
 
 // String returns the already-rendered string result of a formula cell.
-func (c *FormulaStringCol) String(wb *WorkBook) []string {
+func (c *FormulaStringCol) String(_ *WorkBook) []string {
 	return []string{c.RenderedValue}
 }
 

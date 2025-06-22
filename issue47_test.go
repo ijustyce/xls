@@ -11,6 +11,7 @@ import (
 // It uses the CompareXlsXlsx function to compare file contents.
 // This test was originally created to verify issue #47 but now serves as a regression test for .xls/.xlsx parity.
 func TestIssue47(t *testing.T) {
+	t.Parallel()
 	testdataPath := "testdata"
 
 	// Read the directory contents

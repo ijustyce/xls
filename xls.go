@@ -17,23 +17,25 @@ var ErrWorkbookNotFound = errors.New("xls: no Workbook or Book stream found")
 // It returns a parsed WorkBook object, or an error if the file could not be opened
 // or parsed successfully.
 func Open(file string) (*WorkBook, error) {
-	if fi, err := os.Open(file); err == nil {
+	fi, err := os.Open(file)
+	if err == nil {
 		return OpenReader(fi)
-	} else {
-		return nil, err
 	}
+
+	return nil, err
 }
 
 // OpenWithCloser is similar to Open, but also returns the file handle (as io.Closer).
 // This allows the caller to manually close the file when done.
 // Useful when you want to avoid leaking file descriptors.
 func OpenWithCloser(file string) (*WorkBook, io.Closer, error) {
-	if fi, err := os.Open(file); err == nil {
+	fi, err := os.Open(file)
+	if err == nil {
 		wb, err := OpenReader(fi)
 		return wb, fi, err
-	} else {
-		return nil, nil, err
 	}
+
+	return nil, nil, err
 }
 
 // OpenStream loads an XLS workbook from any io.Reader (e.g., network stream, compressed archive).
@@ -63,9 +65,10 @@ func OpenReader(reader io.ReadSeeker) (*WorkBook, error) {
 		return nil, err
 	}
 
+	var book, root *ole2.File
+
 	// Search for the relevant stream that contains workbook data.
 	// The standard name is "Workbook", but some files use "Book" instead.
-	var book, root *ole2.File
 	for _, file := range dir {
 		switch file.Name() {
 		case "Workbook":

@@ -18,6 +18,7 @@ func CompareXlsXlsx(xlsFilePath, xlsxFilePath string) string {
 	if err != nil {
 		return fmt.Sprintf("Cannot open XLS file: %s", err)
 	}
+
 	xlsxFile, err := xlsx.OpenFile(xlsxFilePath)
 	if err != nil {
 		return fmt.Sprintf("Cannot open XLSX file: %s", err)

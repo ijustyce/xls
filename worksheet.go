@@ -47,13 +47,15 @@ func (w *WorkSheet) Row(i int) *Row {
 
 func (w *WorkSheet) parse(buf io.ReadSeeker) {
 	w.rows = make(map[uint16]*Row)
+
 	b := new(bof)
 	var bof_pre *bof
 	var col_pre interface{}
+
 	for {
 		if err := binary.Read(buf, binary.LittleEndian, b); err == nil {
 			bof_pre, col_pre = w.parseBof(buf, b, bof_pre, col_pre)
-			if b.Id == 0xa {
+			if b.ID == 0xa {
 				break
 			}
 		} else {
@@ -69,7 +71,8 @@ func (w *WorkSheet) parseBof(buf io.ReadSeeker, b *bof, pre *bof, col_pre interf
 	bts := make([]byte, b.Size)
 	binary.Read(buf, binary.LittleEndian, bts)
 	buf = bytes.NewReader(bts)
-	switch b.Id {
+
+	switch b.ID {
 	// case 0x0E5: //MERGEDCELLS
 	// ws.mergedCells(buf)
 	case 0x23E: // WINDOW2
@@ -142,8 +145,8 @@ func (w *WorkSheet) parseBof(buf io.ReadSeeker, b *bof, pre *bof, col_pre interf
 		col = new(BlankCol)
 		binary.Read(buf, binary.LittleEndian, col)
 	case 0x1b8: // HYPERLINK
-		var hy HyperLink
-		binary.Read(buf, binary.LittleEndian, &hy.CellRange)
+		var hyperlink HyperLink
+		binary.Read(buf, binary.LittleEndian, &hyperlink.CellRange)
 		buf.Seek(20, 1)
 		var flag uint32
 		binary.Read(buf, binary.LittleEndian, &flag)
@@ -151,32 +154,32 @@ func (w *WorkSheet) parseBof(buf io.ReadSeeker, b *bof, pre *bof, col_pre interf
 
 		if flag&0x14 != 0 {
 			binary.Read(buf, binary.LittleEndian, &count)
-			hy.Description = b.utf16String(buf, count)
+			hyperlink.Description = b.utf16String(buf, count)
 		}
 		if flag&0x80 != 0 {
 			binary.Read(buf, binary.LittleEndian, &count)
-			hy.TargetFrame = b.utf16String(buf, count)
+			hyperlink.TargetFrame = b.utf16String(buf, count)
 		}
 		if flag&0x1 != 0 {
 			var guid [2]uint64
 			binary.Read(buf, binary.BigEndian, &guid)
 			if guid[0] == 0xE0C9EA79F9BACE11 && guid[1] == 0x8C8200AA004BA90B { // URL
-				hy.IsUrl = true
+				hyperlink.IsUrl = true
 				binary.Read(buf, binary.LittleEndian, &count)
-				hy.Url = b.utf16String(buf, count/2)
+				hyperlink.Url = b.utf16String(buf, count/2)
 			} else if guid[0] == 0x303000000000000 && guid[1] == 0xC000000000000046 { // URL{
 				var upCount uint16
 				binary.Read(buf, binary.LittleEndian, &upCount)
 				binary.Read(buf, binary.LittleEndian, &count)
 				bts := make([]byte, count)
 				binary.Read(buf, binary.LittleEndian, &bts)
-				hy.ShortedFilePath = string(bts)
+				hyperlink.ShortedFilePath = string(bts)
 				buf.Seek(24, 1)
 				binary.Read(buf, binary.LittleEndian, &count)
 				if count > 0 {
 					binary.Read(buf, binary.LittleEndian, &count)
 					buf.Seek(2, 1)
-					hy.ExtendedFilePath = b.utf16String(buf, count/2+1)
+					hyperlink.ExtendedFilePath = b.utf16String(buf, count/2+1)
 				}
 			}
 		}
@@ -185,10 +188,10 @@ func (w *WorkSheet) parseBof(buf io.ReadSeeker, b *bof, pre *bof, col_pre interf
 			bts := make([]uint16, count)
 			binary.Read(buf, binary.LittleEndian, &bts)
 			runes := utf16.Decode(bts[:len(bts)-1])
-			hy.TextMark = string(runes)
+			hyperlink.TextMark = string(runes)
 		}
 
-		w.addRange(&hy.CellRange, &hy)
+		w.addRange(&hyperlink.CellRange, &hyperlink)
 	case 0x809:
 		buf.Seek(int64(b.Size), 1)
 	case 0xa:
@@ -220,14 +223,15 @@ func (w *WorkSheet) addRange(rang Ranger, ch contentHandler) {
 	}
 }
 
-func (w *WorkSheet) addContent(row_num uint16, ch contentHandler) {
+func (w *WorkSheet) addContent(rowNum uint16, ch contentHandler) {
 	var row *Row
 	var ok bool
-	if row, ok = w.rows[row_num]; !ok {
+	if row, ok = w.rows[rowNum]; !ok {
 		info := new(rowInfo)
-		info.Index = row_num
+		info.Index = rowNum
 		row = w.addRow(info)
 	}
+
 	if row.info.Lcell < ch.LastCol() {
 		row.info.Lcell = ch.LastCol()
 	}
@@ -245,5 +249,6 @@ func (w *WorkSheet) addRow(info *rowInfo) (row *Row) {
 		row = &Row{info: info, cols: make(map[uint16]contentHandler)}
 		w.rows[info.Index] = row
 	}
+
 	return
 }

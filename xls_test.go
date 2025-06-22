@@ -5,14 +5,16 @@ import (
 )
 
 func TestOpen(t *testing.T) {
+	t.Parallel()
+
 	// Open test XLS file
-	wb, err := Open("testdata/bigtable.xls")
+	workBook, err := Open("testdata/bigtable.xls")
 	if err != nil {
 		t.Fatalf("failed to open XLS file: %v", err)
 	}
 
 	// Verify first sheet exists
-	sheet := wb.GetSheet(0)
+	sheet := workBook.GetSheet(0)
 	if sheet == nil {
 		t.Fatal("expected non-nil sheet at index 0")
 	}
@@ -26,7 +28,9 @@ func TestOpen(t *testing.T) {
 			t.Logf("row %d is nil", i)
 			continue
 		}
+
 		t.Logf("row %d: firstCol=%d, lastCol=%d", i, row.FirstCol(), row.LastCol())
+
 		for col := row.FirstCol(); col < row.LastCol(); col++ {
 			val := row.Col(col)
 			t.Logf("  col %d: %q", col, val)
