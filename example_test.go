@@ -4,34 +4,54 @@ import (
 	"fmt"
 )
 
+// ExampleOpen demonstrates how to open an XLS file and access basic metadata.
 func ExampleOpen() {
-	if xlFile, err := Open("Table.xls"); err == nil {
-		fmt.Println(xlFile.Author)
+	xlFile, err := Open("testdata/Table.xls")
+	if err != nil {
+		fmt.Println("failed to open XLS:", err)
+		return
+	}
+
+	// Print workbook author metadata
+	fmt.Println("Author:", xlFile.Author)
+}
+
+// ExampleWorkBook_NumberSheets shows how to list all sheet names in the workbook.
+func ExampleWorkBook_NumSheets() {
+	xlFile, err := Open("testdata/Table.xls")
+	if err != nil {
+		fmt.Println("failed to open XLS:", err)
+		return
+	}
+
+	// Iterate over all sheets and print their names
+	for i := 0; i < xlFile.NumSheets(); i++ {
+		sheet := xlFile.GetSheet(i)
+		fmt.Println("Sheet:", sheet.Name)
 	}
 }
 
-// func ExampleWorkBook_NumberSheets() {
-// 	if xlFile, err := Open("Table.xls"); err == nil {
-// 		for i := 0; i < xlFile.NumSheets(); i++ {
-// 			sheet := xlFile.GetSheet(i)
-// 			fmt.Println(sheet.Name)
-// 		}
-// 	}
-// }
-
-// Output: read the content of first two cols in each row
+// ExampleWorkBook_GetSheet reads the first sheet and prints the first two columns of each row.
 func ExampleWorkBook_GetSheet() {
-	if xlFile, err := Open("Table.xls"); err == nil {
-		if sheet1 := xlFile.GetSheet(0); sheet1 != nil {
-			fmt.Print("Total Lines ", sheet1.MaxRow, sheet1.Name)
-			col1 := sheet1.Row(0).Col(0)
-			col2 := sheet1.Row(0).Col(0)
-			for i := 0; i <= (int(sheet1.MaxRow)); i++ {
-				row1 := sheet1.Row(i)
-				col1 = row1.Col(0)
-				col2 = row1.Col(1)
-				fmt.Print("\n", col1, ",", col2)
-			}
-		}
+	xlFile, err := Open("testdata/Table.xls")
+	if err != nil {
+		fmt.Println("failed to open XLS:", err)
+		return
+	}
+
+	sheet := xlFile.GetSheet(0)
+	if sheet == nil {
+		fmt.Println("sheet not found")
+		return
+	}
+
+	fmt.Printf("Total Lines: %d (%s)", sheet.MaxRow, sheet.Name)
+
+	// Iterate over all rows and print values from the first two columns
+	for i := 0; i <= int(sheet.MaxRow); i++ {
+		row := sheet.Row(i)
+		col1 := row.Col(0)
+		col2 := row.Col(1)
+		fmt.Printf("\n%s, %s", col1, col2)
 	}
 }

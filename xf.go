@@ -8,7 +8,7 @@ type Xf5 struct {
 	Color     uint16
 	Fill      uint16
 	Border    uint16
-	Linestyle uint16
+	LineStyle uint16
 }
 
 func (x *Xf5) formatNo() uint16 {
@@ -22,10 +22,10 @@ type Xf8 struct {
 	Align       byte
 	Rotation    byte
 	Ident       byte
-	Usedattr    byte
-	Linestyle   uint32
-	Linecolor   uint32
-	Groundcolor uint16
+	UsedAttr    byte
+	LineStyle   uint32
+	LineColor   uint32
+	GroundColor uint16
 }
 
 func (x *Xf8) formatNo() uint16 {

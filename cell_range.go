@@ -59,5 +59,6 @@ func (h *HyperLink) String(wb *WorkBook) []string {
 	for i := uint16(0); i < h.LastColB-h.FristColB+1; i++ {
 		res[i] = str
 	}
+
 	return res
 }

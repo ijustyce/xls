@@ -10,6 +10,8 @@ const (
 	MJD_JD2000 float64 = 51544.5
 )
 
+// shiftJulianToNoon shifts Julian day fractions so the day begins at noon,
+// following astronomical conventions. This improves precision for date conversion.
 func shiftJulianToNoon(julianDays, julianFraction float64) (float64, float64) {
 	switch {
 	case -0.5 < julianFraction && julianFraction < 0.5:
@@ -21,31 +23,44 @@ func shiftJulianToNoon(julianDays, julianFraction float64) (float64, float64) {
 		julianDays -= 1
 		julianFraction += 1.5
 	}
+
 	return julianDays, julianFraction
 }
 
 // Return the integer values for hour, minutes, seconds and
 // nanoseconds that comprised a given fraction of a day.
 func fractionOfADay(fraction float64) (hours, minutes, seconds, nanoseconds int) {
+	// Total nanoseconds in a day: 24 * 60 * 60 * 1e9 = 86400000000000
 	f := 5184000000000000 * fraction
 	nanoseconds = int(math.Mod(f, 1000000000))
+
 	f = f / 1000000000
 	seconds = int(math.Mod(f, 60))
+
 	f = f / 3600
 	minutes = int(math.Mod(f, 60))
+
 	f = f / 60
 	hours = int(f)
+
 	return hours, minutes, seconds, nanoseconds
 }
 
+// julianDateToGregorianTime converts a Julian date (split into two parts)
+// into a time.Time in UTC.
 func julianDateToGregorianTime(part1, part2 float64) time.Time {
+	// Split both parts into integer and fractional components
 	part1I, part1F := math.Modf(part1)
 	part2I, part2F := math.Modf(part2)
+
 	julianDays := part1I + part2I
 	julianFraction := part1F + part2F
+
 	julianDays, julianFraction = shiftJulianToNoon(julianDays, julianFraction)
-	day, month, year := doTheFliegelAndVanFlandernAlgorithm(int(julianDays))
+
+	day, month, year := fliegelVanFlandern(int(julianDays))
 	hours, minutes, seconds, nanoseconds := fractionOfADay(julianFraction)
+
 	return time.Date(year, time.Month(month), day, hours, minutes, seconds, nanoseconds, time.UTC)
 }
 
@@ -56,7 +71,7 @@ func julianDateToGregorianTime(part1, part2 float64) time.Time {
 // explain the constants or variable names set out by Henry F. Fliegel
 // and Thomas C. Van Flandern.  Maybe one day I'll buy that jounal and
 // expand an explanation here - that day is not today.
-func doTheFliegelAndVanFlandernAlgorithm(jd int) (day, month, year int) {
+func fliegelVanFlandern(jd int) (day, month, year int) {
 	l := jd + 68569
 	n := (4 * l) / 146097
 	l = l - (146097*n+3)/4
@@ -67,18 +82,20 @@ func doTheFliegelAndVanFlandernAlgorithm(jd int) (day, month, year int) {
 	l = j / 11
 	m := j + 2 - (12 * l)
 	y := 100*(n-49) + i + l
+
 	return d, m, y
 }
 
 // Convert an excelTime representation (stored as a floating point number) to a time.Time.
 func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
-	var date time.Time
 	var intPart int64 = int64(excelTime)
+	var floatPart float64 = excelTime - float64(intPart)
+
 	// Excel uses Julian dates prior to March 1st 1900, and
 	// Gregorian thereafter.
 	if intPart <= 61 {
-		const OFFSET1900 = 15018.0
-		const OFFSET1904 = 16480.0
+		const OFFSET1900 = 15018.0 // MJD offset for 1899-12-30
+		const OFFSET1904 = 16480.0 // MJD offset for 1904-01-01
 		var date time.Time
 		if date1904 {
 			date = julianDateToGregorianTime(MJD_0+OFFSET1904, excelTime)
@@ -87,14 +104,18 @@ func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
 		}
 		return date
 	}
-	var floatPart float64 = excelTime - float64(intPart)
-	var dayNanoSeconds float64 = 24 * 60 * 60 * 1000 * 1000 * 1000
+
+	const dayNanoSeconds float64 = 24 * 60 * 60 * 1e9
+	days := time.Duration(intPart) * time.Hour * 24
+	frac := time.Duration(dayNanoSeconds * floatPart)
+
+	var baseDate time.Time
 	if date1904 {
-		date = time.Date(1904, 1, 1, 0, 0, 0, 0, time.UTC)
+		baseDate = time.Date(1904, 1, 1, 0, 0, 0, 0, time.UTC)
 	} else {
-		date = time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)
+		// Excel incorrectly considers 1900-02-29 a valid date; the base date here is 1899-12-30
+		baseDate = time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)
 	}
-	durationDays := time.Duration(intPart) * time.Hour * 24
-	durationPart := time.Duration(dayNanoSeconds * floatPart)
-	return date.Add(durationDays).Add(durationPart)
+
+	return baseDate.Add(days).Add(frac)
 }
