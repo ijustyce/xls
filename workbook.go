@@ -3,13 +3,14 @@ package xls
 import (
 	"bytes"
 	"encoding/binary"
-	"golang.org/x/text/encoding/charmap"
 	"io"
 	"os"
 	"unicode/utf16"
+
+	"golang.org/x/text/encoding/charmap"
 )
 
-//xls workbook type
+// xls workbook type
 type WorkBook struct {
 	Is5ver   bool
 	Type     uint16
@@ -28,7 +29,7 @@ type WorkBook struct {
 	dateMode       uint16
 }
 
-//read workbook from ole2 file
+// read workbook from ole2 file
 func newWorkBookFromOle2(rs io.ReadSeeker) *WorkBook {
 	wb := new(WorkBook)
 	wb.Formats = make(map[uint16]*Format)
@@ -258,13 +259,13 @@ func (w *WorkBook) addSheet(sheet *boundsheet, buf io.ReadSeeker) {
 	w.sheets = append(w.sheets, &WorkSheet{bs: sheet, Name: name, wb: w, Visibility: TWorkSheetVisibility(sheet.Visible)})
 }
 
-//reading a sheet from the compress file to memory, you should call this before you try to get anything from sheet
+// reading a sheet from the compress file to memory, you should call this before you try to get anything from sheet
 func (w *WorkBook) prepareSheet(sheet *WorkSheet) {
 	w.rs.Seek(int64(sheet.bs.Filepos), 0)
 	sheet.parse(w.rs)
 }
 
-//Get one sheet by its number
+// Get one sheet by its number
 func (w *WorkBook) GetSheet(num int) *WorkSheet {
 	if num < len(w.sheets) {
 		s := w.sheets[num]
@@ -277,14 +278,38 @@ func (w *WorkBook) GetSheet(num int) *WorkSheet {
 	}
 }
 
-//Get the number of all sheets, look into example
+// Get the number of all sheets, look into example
 func (w *WorkBook) NumSheets() int {
 	return len(w.sheets)
 }
 
-//helper function to read all cells from file
-//Notice: the max value is the limit of the max capacity of lines.
-//Warning: the helper function will need big memeory if file is large.
+func (w *WorkBook) GetSheetByName(sheetName string) *WorkSheet {
+	for _, sheet := range w.sheets {
+		if sheet.Name == sheetName {
+			if !sheet.parsed {
+				w.prepareSheet(sheet)
+			}
+
+			return sheet
+		}
+	}
+
+	return nil
+}
+
+func (w *WorkBook) GetFirstSheet() *WorkSheet {
+	sheet := w.sheets[0]
+
+	if !sheet.parsed {
+		w.prepareSheet(sheet)
+	}
+
+	return sheet
+}
+
+// helper function to read all cells from file
+// Notice: the max value is the limit of the max capacity of lines.
+// Warning: the helper function will need big memeory if file is large.
 func (w *WorkBook) ReadAllCells(max int) (res [][]string) {
 	res = make([][]string, 0)
 	for _, sheet := range w.sheets {

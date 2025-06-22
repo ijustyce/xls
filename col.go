@@ -7,11 +7,9 @@ import (
 	"strings"
 
 	"time"
-
-	yymmdd "github.com/extrame/goyymmdd"
 )
 
-//content type
+// content type
 type contentHandler interface {
 	String(*WorkBook) []string
 	FirstCol() uint16
@@ -55,15 +53,15 @@ func (xf *XfRk) String(wb *WorkBook) string {
 		if fNo >= 164 { // user defined format
 			if formatter := wb.Formats[fNo]; formatter != nil {
 				formatterLower := strings.ToLower(formatter.str)
-				if formatterLower == "general" ||
+				if (formatterLower == "general" ||
 					strings.Contains(formatter.str, "#") ||
-					strings.Contains(formatter.str, ".00") ||
-					strings.Contains(formatterLower, "m/y") ||
-					strings.Contains(formatterLower, "d/y") ||
-					strings.Contains(formatterLower, "m.y") ||
-					strings.Contains(formatterLower, "d.y") ||
-					strings.Contains(formatterLower, "h:") ||
-					strings.Contains(formatterLower, "д.г") {
+					strings.Contains(formatter.str, ".00")) &&
+					!strings.Contains(formatterLower, "m/y") &&
+					!strings.Contains(formatterLower, "d/y") &&
+					!strings.Contains(formatterLower, "m.y") &&
+					!strings.Contains(formatterLower, "d.y") &&
+					!strings.Contains(formatterLower, "h:") &&
+					!strings.Contains(formatterLower, "д.г") {
 					//If format contains # or .00 then this is a number
 					return xf.Rk.String()
 				} else {
@@ -72,7 +70,7 @@ func (xf *XfRk) String(wb *WorkBook) string {
 						f = float64(i)
 					}
 					t := timeFromExcelTime(f, wb.dateMode == 1)
-					return yymmdd.Format(t, formatter.str)
+					return t.Format("02.01.2006")
 				}
 			}
 			// see http://www.openoffice.org/sc/excelfileformat.pdf Page #174
@@ -168,10 +166,6 @@ type NumberCol struct {
 }
 
 func (c *NumberCol) String(wb *WorkBook) []string {
-	if fNo := wb.Xfs[c.Index].formatNo(); fNo != 0 {
-		t := timeFromExcelTime(c.Float, wb.dateMode == 1)
-		return []string{yymmdd.Format(t, wb.Formats[fNo].str)}
-	}
 	return []string{strconv.FormatFloat(c.Float, 'f', -1, 64)}
 }
 

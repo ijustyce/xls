@@ -1,61 +1,91 @@
 package xls
 
 import (
+	"bytes"
+	"errors"
 	"io"
 	"os"
 
-	"github.com/extrame/ole2"
+	"github.com/vstasn/ole2"
 )
 
-//Open one xls file
-func Open(file string, charset string) (*WorkBook, error) {
+// ErrWorkbookNotFound is returned when neither "Workbook" nor "Book" stream
+// could be found in the OLE2 directory structure.
+var ErrWorkbookNotFound = errors.New("xls: no Workbook or Book stream found")
+
+// Open opens an XLS file from the given file path.
+// It returns a parsed WorkBook object, or an error if the file could not be opened
+// or parsed successfully.
+func Open(file string) (*WorkBook, error) {
 	if fi, err := os.Open(file); err == nil {
-		return OpenReader(fi, charset)
+		return OpenReader(fi)
 	} else {
 		return nil, err
 	}
 }
 
-//Open one xls file and return the closer
-func OpenWithCloser(file string, charset string) (*WorkBook, io.Closer, error) {
+// OpenWithCloser is similar to Open, but also returns the file handle (as io.Closer).
+// This allows the caller to manually close the file when done.
+// Useful when you want to avoid leaking file descriptors.
+func OpenWithCloser(file string) (*WorkBook, io.Closer, error) {
 	if fi, err := os.Open(file); err == nil {
-		wb, err := OpenReader(fi, charset)
+		wb, err := OpenReader(fi)
 		return wb, fi, err
 	} else {
 		return nil, nil, err
 	}
 }
 
-//Open xls file from reader
-func OpenReader(reader io.ReadSeeker, charset string) (wb *WorkBook, err error) {
-	var ole *ole2.Ole
-	if ole, err = ole2.Open(reader, charset); err == nil {
-		var dir []*ole2.File
-		if dir, err = ole.ListDir(); err == nil {
-			var book *ole2.File
-			var root *ole2.File
-			for _, file := range dir {
-				name := file.Name()
-				if name == "Workbook" {
-					if book == nil {
-						book = file
-					}
-					//book = file
-					// break
-				}
-				if name == "Book" {
-					book = file
-					// break
-				}
-				if name == "Root Entry" {
-					root = file
-				}
+// OpenStream loads an XLS workbook from any io.Reader (e.g., network stream, compressed archive).
+// Since the XLS format requires seeking, the entire input is buffered into memory.
+// Not recommended for very large XLS files due to memory usage.
+func OpenStream(r io.Reader) (*WorkBook, error) {
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, r); err != nil {
+		return nil, err
+	}
+
+	return OpenReader(bytes.NewReader(buf.Bytes()))
+}
+
+// OpenReader parses an XLS workbook from a seekable input stream (e.g., file, bytes.Reader).
+// The reader must implement io.ReadSeeker as the underlying OLE2 format requires random access.
+func OpenReader(reader io.ReadSeeker) (*WorkBook, error) {
+	// Open the OLE2 compound document structure
+	ole, err := ole2.Open(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	// List all files (streams) within the OLE2 document
+	dir, err := ole.ListDir()
+	if err != nil {
+		return nil, err
+	}
+
+	// Search for the relevant stream that contains workbook data.
+	// The standard name is "Workbook", but some files use "Book" instead.
+	var book, root *ole2.File
+	for _, file := range dir {
+		switch file.Name() {
+		case "Workbook":
+			if book == nil {
+				book = file // Prefer "Workbook" if it's the first one found
 			}
-			if book != nil {
-				wb = newWorkBookFromOle2(ole.OpenFile(book, root))
-				return
+		case "Book":
+			if book == nil {
+				book = file // Fallback to "Book" only if "Workbook" wasn't seen first
 			}
+		case "Root Entry":
+			root = file // Needed as context for resolving internal paths
 		}
 	}
-	return
+
+	if book == nil {
+		// Return explicit error if neither stream was found
+		return nil, ErrWorkbookNotFound
+	}
+
+	// Construct the WorkBook from the selected stream
+	return newWorkBookFromOle2(ole.OpenFile(book, root)), nil
 }
